@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, FlatList } from 'react-native';
 import { BASE_COLORS } from '../constants/colors';
+import { joinStudyChannel, leaveStudyChannel } from '../services/agoraService';
 
 const INITIAL_MESSAGES = [
   { id: '1', sender: '@Alex_Reader', text: 'Hey Sam! Have you checked out Chapter 1 yet?', time: '14:15' },
@@ -11,6 +12,12 @@ const INITIAL_MESSAGES = [
 export default function SocialScreen({ user, setActiveCall }) {
   const [messages, setMessages] = useState(INITIAL_MESSAGES);
   const [inputText, setInputText] = useState('');
+
+  const startCall = async (type) => {
+    const isVideo = type === 'VIDEO';
+    await joinStudyChannel('LiteratureRoom1', 0, isVideo);
+    setActiveCall({ type, targetUser: 'Literature Room #1' });
+  };
 
   const sendMessage = () => {
     if (!inputText.trim()) return;
@@ -32,13 +39,13 @@ export default function SocialScreen({ user, setActiveCall }) {
         <View style={styles.callGroup}>
           <TouchableOpacity 
             style={styles.callBtn} 
-            onPress={() => setActiveCall({ type: 'VOICE', targetUser: '@Alex_Reader' })}
+            onPress={() => startCall('VOICE')}
           >
             <Text style={styles.callBtnText}>📞 Voice</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             style={styles.callBtn} 
-            onPress={() => setActiveCall({ type: 'VIDEO', targetUser: '@Alex_Reader' })}
+            onPress={() => startCall('VIDEO')}
           >
             <Text style={styles.callBtnText}>📹 Video</Text>
           </TouchableOpacity>
