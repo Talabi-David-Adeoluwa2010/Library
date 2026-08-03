@@ -27,6 +27,8 @@ import ProfileScreen from './src/screens/ProfileScreen';
 import ScannerScreen from './src/screens/ScannerScreen';
 import TournamentScreen from './src/screens/TournamentScreen';
 import FlashcardScreen from './src/screens/FlashcardScreen';
+import AnalyticsScreen from './src/screens/AnalyticsScreen';
+import LoungeScreen from './src/screens/LoungeScreen';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('Reader');
@@ -39,7 +41,7 @@ export default function App() {
   // User Profile State
   const [user, setUser] = useState({
     username: '@BookWorm_Sam',
-    tier: 'Free',
+    tier: 'Free Tier',
     xp: 650,
     streak: 6,
     rank: 'Scholar',
@@ -47,17 +49,16 @@ export default function App() {
     avatar: 'https://picsum.photos/seed/user_sam/200/200',
   });
 
-  // AI Character Chat State
+  // AI Companion Chat State
   const [chatInput, setChatInput] = useState('');
   const [chatHistory, setChatHistory] = useState([
-    { sender: 'Jay Gatsby', text: 'Old sport, what brings you to my library today?' }
+    { sender: 'Jay Gatsby', text: 'Old sport, what brings you to my library today?' },
   ]);
   const [isAiLoading, setIsAiLoading] = useState(false);
 
   // Send message to Gemini API for Jay Gatsby
   const handleSendCharacterMessage = async () => {
     if (!chatInput.trim() || isAiLoading) return;
-
     const userMsg = chatInput;
     setChatInput('');
 
@@ -66,7 +67,6 @@ export default function App() {
     setIsAiLoading(true);
 
     const aiReply = await chatWithCharacter('Jay Gatsby', userMsg);
-
     setChatHistory([...updatedHistory, { sender: 'Jay Gatsby', text: aiReply }]);
     setIsAiLoading(false);
   };
@@ -79,21 +79,21 @@ export default function App() {
     <SafeAreaView style={[styles.container, nightMode && { backgroundColor: '#121115' }]}>
       <StatusBar barStyle="light-content" backgroundColor={BASE_COLORS.obsidian} />
 
-      {/* Top Header */}
+      {/* Top App Header */}
       <View style={styles.topHeader}>
         <TouchableOpacity onPress={() => setShowQrModal(true)}>
           <Text style={styles.logoText}>PARCHMENT & OBSIDIAN</Text>
           <Text style={styles.userTag}>
-            {user.username} • <Text style={{ color: BASE_COLORS.gold }}>{user.rank}</Text>
+            {user.username} • <Text style={{ color: BASE_COLORS.gold }}>{user.tier}</Text>
           </Text>
         </TouchableOpacity>
 
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           <TouchableOpacity style={styles.headerBtn} onPress={() => setShowScannerModal(true)}>
-            <Text style={{ fontSize: 12, color: BASE_COLORS.parchment }}>📷 Scan</Text>
+            <Text style={{ fontSize: 11, color: BASE_COLORS.parchment }}>📷 Scan</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.headerBtn} onPress={() => setShowQrModal(true)}>
-            <Text style={{ fontSize: 12, color: BASE_COLORS.parchment }}>🪪 Passport</Text>
+            <Text style={{ fontSize: 11, color: BASE_COLORS.parchment }}>🪪 Passport</Text>
           </TouchableOpacity>
           <View style={styles.statsBadge}>
             <Text style={styles.statsText}>🔥 {user.streak}d | ✨ {user.xp} XP</Text>
@@ -107,8 +107,8 @@ export default function App() {
           <Text style={{ color: BASE_COLORS.parchment, fontSize: 12, fontWeight: 'bold' }}>
             {activeCall.type === 'VIDEO' ? '📹' : '📞'} Live Call with {activeCall.targetUser}
           </Text>
-          <TouchableOpacity 
-            style={styles.callEndBtn} 
+          <TouchableOpacity
+            style={styles.callEndBtn}
             onPress={async () => {
               await leaveStudyChannel();
               setActiveCall(null);
@@ -119,28 +119,31 @@ export default function App() {
         </View>
       )}
 
-      {/* Main Body Content */}
+      {/* Main Screen Body Router */}
       <View style={styles.body}>
         {activeTab === 'Reader' && (
-          <ReaderScreen 
-            nightMode={nightMode} 
-            setNightMode={setNightMode} 
-            openCharacterChat={() => setShowCharacterModal(true)} 
+          <ReaderScreen
+            user={user}
+            nightMode={nightMode}
+            setNightMode={setNightMode}
+            openCharacterChat={() => setShowCharacterModal(true)}
           />
         )}
         {activeTab === 'Study' && <StudyScreen user={user} setUser={setUser} />}
+        {activeTab === 'Analytics' && <AnalyticsScreen user={user} />}
         {activeTab === 'Arena' && <TournamentScreen user={user} onStartMatch={() => setActiveTab('Study')} />}
-        {activeTab === 'Flashcards' && <FlashcardScreen />}
+        {activeTab === 'Deck' && <FlashcardScreen />}
+        {activeTab === 'Lounge' && <LoungeScreen />}
         {activeTab === 'Social' && <SocialScreen user={user} setUser={setUser} setActiveCall={setActiveCall} />}
         {activeTab === 'Bazaar' && <BazaarScreen user={user} setUser={setUser} />}
         {activeTab === 'Profile' && <ProfileScreen user={user} openQr={() => setShowQrModal(true)} />}
       </View>
 
-      {/* Camera Passport Scanner Modal */}
+      {/* Snapcode Camera Scanner Modal */}
       <Modal visible={showScannerModal} animationType="slide">
-        <ScannerScreen 
-          onClose={() => setShowScannerModal(false)} 
-          onAddFriend={handleAddFriend} 
+        <ScannerScreen
+          onClose={() => setShowScannerModal(false)}
+          onAddFriend={handleAddFriend}
         />
       </Modal>
 
@@ -160,7 +163,9 @@ export default function App() {
               />
             </View>
 
-            <Text style={{ color: BASE_COLORS.parchment, marginTop: 16, fontWeight: 'bold' }}>Rank: {user.rank}</Text>
+            <Text style={{ color: BASE_COLORS.parchment, marginTop: 16, fontWeight: 'bold' }}>
+              Status: <Text style={{ color: BASE_COLORS.gold }}>{user.tier}</Text>
+            </Text>
             <TouchableOpacity style={styles.closeModalBtn} onPress={() => setShowQrModal(false)}>
               <Text style={{ color: BASE_COLORS.parchment, fontWeight: 'bold' }}>Close Passport</Text>
             </TouchableOpacity>
@@ -168,12 +173,12 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* Dynamic AI Character Chat Modal */}
+      {/* AI Character Chat Modal */}
       <Modal visible={showCharacterModal} animationType="slide" transparent={true}>
         <View style={styles.modalOverlay}>
           <View style={styles.characterModalCard}>
             <Text style={styles.qrModalTitle}>🎭 AI Character Companion</Text>
-            <Text style={{ color: BASE_COLORS.textMuted, fontSize: 12, marginBottom: 12 }}>Talking with Jay Gatsby</Text>
+            <Text style={{ color: BASE_COLORS.textMuted, fontSize: 12, marginBottom: 10 }}>Talking with Jay Gatsby</Text>
 
             <ScrollView style={styles.characterChatArea}>
               {chatHistory.map((item, index) => (
@@ -216,11 +221,13 @@ export default function App() {
         {[
           { key: 'Reader', icon: '📖', label: 'Reader' },
           { key: 'Study', icon: '🧪', label: 'Study' },
+          { key: 'Analytics', icon: '📊', label: 'Stats' },
           { key: 'Arena', icon: '⚔️', label: 'Arena' },
-          { key: 'Flashcards', icon: '🧠', label: 'Deck' },
+          { key: 'Deck', icon: '🧠', label: 'Deck' },
+          { key: 'Lounge', icon: '👥', label: 'Lounge' },
           { key: 'Social', icon: '💬', label: 'Social' },
           { key: 'Bazaar', icon: '🛍️', label: 'Bazaar' },
-          { key: 'Profile', icon: '🏅', label: 'Profile' }
+          { key: 'Profile', icon: '🏅', label: 'Profile' },
         ].map((tab) => (
           <TouchableOpacity
             key={tab.key}
@@ -251,7 +258,7 @@ const styles = StyleSheet.create({
   tabBar: { flexDirection: 'row', backgroundColor: BASE_COLORS.obsidianLight, borderTopWidth: 1, borderTopColor: '#25242A', paddingVertical: 6 },
   tabItem: { flex: 1, alignItems: 'center', paddingVertical: 2 },
   activeTabItem: { borderBottomWidth: 2, borderBottomColor: BASE_COLORS.terracotta },
-  tabText: { color: BASE_COLORS.textMuted, fontSize: 8, fontWeight: '600' },
+  tabText: { color: BASE_COLORS.textMuted, fontSize: 7, fontWeight: '600' },
   activeTabText: { color: BASE_COLORS.terracotta },
   eyeCareOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: BASE_COLORS.tintOverlay },
   floatingCallBar: { backgroundColor: BASE_COLORS.terracotta, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 8 },
