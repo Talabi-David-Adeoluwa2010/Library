@@ -24,12 +24,16 @@ import StudyScreen from './src/screens/StudyScreen';
 import SocialScreen from './src/screens/SocialScreen';
 import BazaarScreen from './src/screens/BazaarScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
+import ScannerScreen from './src/screens/ScannerScreen';
+import TournamentScreen from './src/screens/TournamentScreen';
+import FlashcardScreen from './src/screens/FlashcardScreen';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('Reader');
   const [nightMode, setNightMode] = useState(false);
   const [activeCall, setActiveCall] = useState(null);
   const [showQrModal, setShowQrModal] = useState(false);
+  const [showScannerModal, setShowScannerModal] = useState(false);
   const [showCharacterModal, setShowCharacterModal] = useState(false);
 
   // User Profile State
@@ -57,17 +61,18 @@ export default function App() {
     const userMsg = chatInput;
     setChatInput('');
 
-    // Append user message locally first
     const updatedHistory = [...chatHistory, { sender: 'You', text: userMsg }];
     setChatHistory(updatedHistory);
     setIsAiLoading(true);
 
-    // Call Gemini AI service
     const aiReply = await chatWithCharacter('Jay Gatsby', userMsg);
 
-    // Update history with AI response
     setChatHistory([...updatedHistory, { sender: 'Jay Gatsby', text: aiReply }]);
     setIsAiLoading(false);
+  };
+
+  const handleAddFriend = (friendHandle) => {
+    alert(`Successfully added ${friendHandle} to your Scholar network!`);
   };
 
   return (
@@ -83,9 +88,12 @@ export default function App() {
           </Text>
         </TouchableOpacity>
 
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-          <TouchableOpacity style={styles.qrBadgeBtn} onPress={() => setShowQrModal(true)}>
-            <Text style={{ fontSize: 12, color: BASE_COLORS.parchment }}>📷 Passport</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <TouchableOpacity style={styles.headerBtn} onPress={() => setShowScannerModal(true)}>
+            <Text style={{ fontSize: 12, color: BASE_COLORS.parchment }}>📷 Scan</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.headerBtn} onPress={() => setShowQrModal(true)}>
+            <Text style={{ fontSize: 12, color: BASE_COLORS.parchment }}>🪪 Passport</Text>
           </TouchableOpacity>
           <View style={styles.statsBadge}>
             <Text style={styles.statsText}>🔥 {user.streak}d | ✨ {user.xp} XP</Text>
@@ -121,10 +129,20 @@ export default function App() {
           />
         )}
         {activeTab === 'Study' && <StudyScreen user={user} setUser={setUser} />}
+        {activeTab === 'Arena' && <TournamentScreen user={user} onStartMatch={() => setActiveTab('Study')} />}
+        {activeTab === 'Flashcards' && <FlashcardScreen />}
         {activeTab === 'Social' && <SocialScreen user={user} setUser={setUser} setActiveCall={setActiveCall} />}
         {activeTab === 'Bazaar' && <BazaarScreen user={user} setUser={setUser} />}
         {activeTab === 'Profile' && <ProfileScreen user={user} openQr={() => setShowQrModal(true)} />}
       </View>
+
+      {/* Camera Passport Scanner Modal */}
+      <Modal visible={showScannerModal} animationType="slide">
+        <ScannerScreen 
+          onClose={() => setShowScannerModal(false)} 
+          onAddFriend={handleAddFriend} 
+        />
+      </Modal>
 
       {/* Library Passport / QR Modal */}
       <Modal visible={showQrModal} animationType="slide" transparent={true}>
@@ -198,6 +216,8 @@ export default function App() {
         {[
           { key: 'Reader', icon: '📖', label: 'Reader' },
           { key: 'Study', icon: '🧪', label: 'Study' },
+          { key: 'Arena', icon: '⚔️', label: 'Arena' },
+          { key: 'Flashcards', icon: '🧠', label: 'Deck' },
           { key: 'Social', icon: '💬', label: 'Social' },
           { key: 'Bazaar', icon: '🛍️', label: 'Bazaar' },
           { key: 'Profile', icon: '🏅', label: 'Profile' }
@@ -221,17 +241,17 @@ export default function App() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: BASE_COLORS.obsidian },
-  topHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: BASE_COLORS.obsidianLight },
-  logoText: { color: BASE_COLORS.parchment, fontWeight: 'bold', fontSize: 13 },
-  userTag: { color: BASE_COLORS.textMuted, fontSize: 11, marginTop: 2 },
-  qrBadgeBtn: { backgroundColor: BASE_COLORS.obsidianLight, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
-  statsBadge: { backgroundColor: BASE_COLORS.obsidianLight, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12 },
-  statsText: { color: BASE_COLORS.parchment, fontSize: 12, fontWeight: 'bold' },
+  topHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 12, borderBottomWidth: 1, borderBottomColor: BASE_COLORS.obsidianLight },
+  logoText: { color: BASE_COLORS.parchment, fontWeight: 'bold', fontSize: 12 },
+  userTag: { color: BASE_COLORS.textMuted, fontSize: 10, marginTop: 2 },
+  headerBtn: { backgroundColor: BASE_COLORS.obsidianLight, paddingHorizontal: 7, paddingVertical: 4, borderRadius: 6 },
+  statsBadge: { backgroundColor: BASE_COLORS.obsidianLight, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 10 },
+  statsText: { color: BASE_COLORS.parchment, fontSize: 11, fontWeight: 'bold' },
   body: { flex: 1 },
-  tabBar: { flexDirection: 'row', backgroundColor: BASE_COLORS.obsidianLight, borderTopWidth: 1, borderTopColor: '#25242A', paddingVertical: 8 },
-  tabItem: { flex: 1, alignItems: 'center', paddingVertical: 4 },
+  tabBar: { flexDirection: 'row', backgroundColor: BASE_COLORS.obsidianLight, borderTopWidth: 1, borderTopColor: '#25242A', paddingVertical: 6 },
+  tabItem: { flex: 1, alignItems: 'center', paddingVertical: 2 },
   activeTabItem: { borderBottomWidth: 2, borderBottomColor: BASE_COLORS.terracotta },
-  tabText: { color: BASE_COLORS.textMuted, fontSize: 9, fontWeight: '600' },
+  tabText: { color: BASE_COLORS.textMuted, fontSize: 8, fontWeight: '600' },
   activeTabText: { color: BASE_COLORS.terracotta },
   eyeCareOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: BASE_COLORS.tintOverlay },
   floatingCallBar: { backgroundColor: BASE_COLORS.terracotta, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 8 },
