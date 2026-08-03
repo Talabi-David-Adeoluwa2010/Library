@@ -11,3 +11,4 @@ export const BASE_COLORS = {
   highlightYellow: 'rgba(242, 201, 76, 0.45)',
   tintOverlay: 'rgba(255, 160, 0, 0.15)',
 };
+
