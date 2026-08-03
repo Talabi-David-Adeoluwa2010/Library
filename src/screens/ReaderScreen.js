@@ -1,162 +1,174 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
-  View,
-  Text,
   StyleSheet,
+  Text,
+  View,
   ScrollView,
   TouchableOpacity,
-  Switch,
+  TextInput,
   Alert,
 } from 'react-native';
 import * as Speech from 'expo-speech';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BASE_COLORS } from '../constants/colors';
+import { checkProAccess } from '../services/proGateService';
 
-const SAMPLE_CHAPTER = {
-  title: 'The Great Gatsby',
-  author: 'F. Scott Fitzgerald',
-  chapterName: 'Chapter I',
-  content: [
-    "In my younger and more vulnerable years my father gave me some advice that I've been turning over in my mind ever since.",
-    "\"Whenever you feel like criticizing any one,\" he told me, \"just remember that all the people in this world haven't had the advantages that you've had.\"",
-    "He didn't say any more, but we've always been unusually communicative in a reserved way, and I understood that he meant a great deal more than that.",
-    "In consequence, I'm inclined to reserve all judgments, a habit that has opened up many curious natures to me and also made me the victim of not a few veteran bores."
-  ],
-};
+export default function ReaderScreen({ user, nightMode, setNightMode, openCharacterChat }) {
+  const [activeTheme, setActiveTheme] = useState('parchment');
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isDownloaded, setIsDownloaded] = useState(false);
+  const [voiceNotes, setVoiceNotes] = useState([]);
+  const [isRecording, setIsRecording] = useState(false);
+  const [noteText, setNoteText] = useState('');
 
-export default function ReaderScreen({ nightMode, setNightMode, openCharacterChat }) {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [speechRate, setSpeechRate] = useState(0.9);
-  const [fontSize, setFontSize] = useState(16);
-  const [savedBookmark, setSavedBookmark] = useState(null);
-  const [selectedParagraph, setSelectedParagraph] = useState(null);
+  const samplePassage =
+    "In my younger and more vulnerable years my father gave me some advice that I’ve been turning over in my mind ever since. 'Whenever you feel like criticizing any one,' he told me, 'just remember that all the people in this world haven’t had the advantages that you’ve had.'";
 
-  // Load saved bookmark on launch
-  useEffect(() => {
-    loadBookmark();
-  }, []);
-
-  const saveBookmark = async (index) => {
-    try {
-      await AsyncStorage.setItem('@saved_bookmark', index.toString());
-      setSavedBookmark(index);
-      Alert.alert('Bookmark Saved', `Bookmarked paragraph ${index + 1}`);
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const loadBookmark = async () => {
-    try {
-      const val = await AsyncStorage.getItem('@saved_bookmark');
-      if (val !== null) setSavedBookmark(parseInt(val, 10));
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const toggleSpeech = async () => {
-    if (isPlaying) {
-      await Speech.stop();
-      setIsPlaying(false);
+  // Text-To-Speech Controls
+  const toggleSpeech = () => {
+    if (isSpeaking) {
+      Speech.stop();
+      setIsSpeaking(false);
     } else {
-      setIsPlaying(true);
-      const textToRead = SAMPLE_CHAPTER.content.join(' ');
-      Speech.speak(textToRead, {
+      setIsSpeaking(true);
+      Speech.speak(samplePassage, {
         language: 'en-US',
         pitch: 1.0,
-        rate: speechRate,
-        onDone: () => setIsPlaying(false),
-        onStopped: () => setIsPlaying(false),
+        rate: 0.9,
+        onDone: () => setIsSpeaking(false),
+        onStopped: () => setIsSpeaking(false),
       });
     }
   };
 
+  // Offline Download Check (Library Pro Feature)
+  const handleOfflineDownload = () => {
+    checkProAccess(user, 'Offline Sync & Book Downloading', () => {
+      setIsDownloaded(!isDownloaded);
+      Alert.alert(
+        isDownloaded ? 'Removed Offline' : 'Saved Offline! 📴',
+        isDownloaded
+          ? 'Book removed from offline storage.'
+          : 'This title and its audio narration are saved to your device.'
+      );
+    });
+  };
+
+  // Theme Picker Gate (Library Pro Feature for Emerald & Velvet)
+  const handleSelectTheme = (themeKey) => {
+    if (themeKey === 'emerald' || themeKey === 'velvet') {
+      checkProAccess(user, 'Custom Warmth & Velvet Themes', () => setActiveTheme(themeKey));
+    } else {
+      setActiveTheme(themeKey);
+    }
+  };
+
+  // Voice Margin Note Recorder
+  const toggleRecording = () => {
+    if (isRecording) {
+      if (noteText.trim() === '') {
+        Alert.alert('Empty Note', 'Please enter text or audio transcript first.');
+        setIsRecording(false);
+        return;
+      }
+      setVoiceNotes([
+        ...voiceNotes,
+        { id: Date.now().toString(), text: noteText, timestamp: 'Just now' },
+      ]);
+      setNoteText('');
+      setIsRecording(false);
+      Alert.alert('Margin Note Saved! 🎙️', 'Transcribed and linked to this page.');
+    } else {
+      setIsRecording(true);
+    }
+  };
+
+  // Background Theme Resolver
+  const getBackgroundColor = () => {
+    if (nightMode) return '#121115';
+    switch (activeTheme) {
+      case 'emerald':
+        return '#0F201B';
+      case 'velvet':
+        return '#1A0F1F';
+      default:
+        return BASE_COLORS.parchment;
+    }
+  };
+
+  const getTextColor = () => {
+    if (nightMode || activeTheme === 'emerald' || activeTheme === 'velvet') {
+      return BASE_COLORS.parchment;
+    }
+    return BASE_COLORS.obsidian;
+  };
+
   return (
-    <View style={styles.container}>
-      {/* Reader Controls Toolbar */}
-      <View style={styles.readerHeader}>
-        <TouchableOpacity onPress={openCharacterChat} style={styles.characterBtn}>
-          <Text style={styles.btnText}>🎭 AI Gatsby Chat</Text>
+    <View style={[styles.container, { backgroundColor: getBackgroundColor() }]}>
+      {/* Top Reading Toolbar */}
+      <View style={styles.topToolbar}>
+        <TouchableOpacity style={styles.toolBtn} onPress={toggleSpeech}>
+          <Text style={styles.toolBtnText}>{isSpeaking ? '⏹️ Stop Narration' : '🔊 Listen (TTS)'}</Text>
         </TouchableOpacity>
 
-        <View style={styles.toolGroup}>
-          {/* Font Size Adjusters */}
-          <TouchableOpacity 
-            style={styles.fontBtn} 
-            onPress={() => setFontSize(Math.max(12, fontSize - 2))}
-          >
-            <Text style={styles.toolBtnText}>A-</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.fontBtn} 
-            onPress={() => setFontSize(Math.min(26, fontSize + 2))}
-          >
-            <Text style={styles.toolBtnText}>A+</Text>
-          </TouchableOpacity>
+        <TouchableOpacity style={styles.toolBtn} onPress={handleOfflineDownload}>
+          <Text style={styles.toolBtnText}>{isDownloaded ? '✅ Saved Offline' : '📴 Sync Offline'}</Text>
+        </TouchableOpacity>
 
-          <View style={styles.switchRow}>
-            <Text style={{ color: BASE_COLORS.parchment, fontSize: 11 }}>🌙 Warmth</Text>
-            <Switch value={nightMode} onValueChange={setNightMode} thumbColor={BASE_COLORS.terracotta} />
-          </View>
-        </View>
+        <TouchableOpacity style={styles.toolBtn} onPress={openCharacterChat}>
+          <Text style={styles.toolBtnText}>🎭 Chat Gatsby</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.toolBtn} onPress={() => setNightMode(!nightMode)}>
+          <Text style={styles.toolBtnText}>{nightMode ? '☀️ Day' : '🌙 Night'}</Text>
+        </TouchableOpacity>
       </View>
 
-      {/* Book Parchment Canvas */}
-      <ScrollView style={[styles.canvas, nightMode && { backgroundColor: BASE_COLORS.parchmentWarm }]}>
-        <Text style={styles.title}>{SAMPLE_CHAPTER.title}</Text>
-        <Text style={styles.author}>by {SAMPLE_CHAPTER.author} • {SAMPLE_CHAPTER.chapterName}</Text>
-        <View style={styles.divider} />
+      {/* Book Reader Canvas */}
+      <ScrollView style={styles.readerContent}>
+        <Text style={styles.chapterTitle}>CHAPTER I</Text>
+        <Text style={[styles.bookText, { color: getTextColor() }]}>{samplePassage}</Text>
 
-        {SAMPLE_CHAPTER.content.map((paragraph, index) => {
-          const isBookmarked = savedBookmark === index;
-          const isSelected = selectedParagraph === index;
-
-          return (
-            <TouchableOpacity
-              key={index}
-              activeOpacity={0.8}
-              onPress={() => setSelectedParagraph(index)}
-              style={[
-                styles.paragraphBlock,
-                isSelected && styles.selectedParagraph,
-                isBookmarked && styles.bookmarkedParagraph,
-              ]}
-            >
-              <Text style={[styles.bodyText, { fontSize, lineHeight: fontSize * 1.6 }]}>
-                {paragraph}
-              </Text>
-              
-              {isSelected && (
-                <View style={styles.paragraphTools}>
-                  <TouchableOpacity style={styles.actionBadge} onPress={() => saveBookmark(index)}>
-                    <Text style={styles.badgeText}>{isBookmarked ? '🔖 Bookmarked' : '📌 Bookmark'}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity 
-                    style={[styles.actionBadge, { backgroundColor: BASE_COLORS.gold }]}
-                    onPress={() => {
-                      Speech.speak(paragraph, { rate: speechRate });
-                    }}
-                  >
-                    <Text style={[styles.badgeText, { color: BASE_COLORS.obsidian }]}>🔊 Read Paragraph</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-            </TouchableOpacity>
-          );
-        })}
+        {/* Display Margin Notes */}
+        {voiceNotes.length > 0 && (
+          <View style={styles.notesSection}>
+            <Text style={styles.notesSectionTitle}>📌 Margin Voice Notes & Transcripts</Text>
+            {voiceNotes.map((note) => (
+              <View key={note.id} style={styles.noteCard}>
+                <Text style={styles.noteTimestamp}>🎙️ {note.timestamp}</Text>
+                <Text style={styles.noteText}>{note.text}</Text>
+              </View>
+            ))}
+          </View>
+        )}
       </ScrollView>
 
-      {/* Floating Audio Controller */}
-      <View style={styles.audioBar}>
-        <View>
-          <Text style={{ color: BASE_COLORS.parchment, fontWeight: 'bold', fontSize: 12 }}>🎧 Narrator Engine</Text>
-          <TouchableOpacity onPress={() => setSpeechRate(speechRate === 0.9 ? 1.2 : 0.9)}>
-            <Text style={{ color: BASE_COLORS.gold, fontSize: 10 }}>Speed: {speechRate}x (Tap to change)</Text>
-          </TouchableOpacity>
-        </View>
-        <TouchableOpacity style={styles.playBtn} onPress={toggleSpeech}>
-          <Text style={styles.btnText}>{isPlaying ? '⏸ PAUSE' : '▶ LISTEN ALL'}</Text>
+      {/* Voice Note Input Bar */}
+      <View style={styles.inputBar}>
+        <TextInput
+          style={styles.textInput}
+          placeholder={isRecording ? 'Listening... Speak now' : 'Type or record margin note...'}
+          placeholderTextColor={BASE_COLORS.textMuted}
+          value={noteText}
+          onChangeText={setNoteText}
+        />
+        <TouchableOpacity
+          style={[styles.micBtn, isRecording && { backgroundColor: BASE_COLORS.terracotta }]}
+          onPress={toggleRecording}
+        >
+          <Text style={styles.micBtnText}>{isRecording ? '⏹️ Save' : '🎙️ Record'}</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Pro Theme Selector */}
+      <View style={styles.themeSelector}>
+        <TouchableOpacity style={styles.themeDot} onPress={() => handleSelectTheme('parchment')}>
+          <Text style={styles.themeDotText}>📜 Standard</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.themeDot} onPress={() => handleSelectTheme('emerald')}>
+          <Text style={[styles.themeDotText, { color: BASE_COLORS.gold }]}>👑 Emerald</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.themeDot} onPress={() => handleSelectTheme('velvet')}>
+          <Text style={[styles.themeDotText, { color: BASE_COLORS.gold }]}>👑 Velvet</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -164,25 +176,23 @@ export default function ReaderScreen({ nightMode, setNightMode, openCharacterCha
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  readerHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 10, backgroundColor: BASE_COLORS.obsidianLight },
-  characterBtn: { backgroundColor: BASE_COLORS.terracotta, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
-  toolGroup: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  fontBtn: { backgroundColor: BASE_COLORS.obsidian, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
-  toolBtnText: { color: BASE_COLORS.parchment, fontWeight: 'bold', fontSize: 12 },
-  switchRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  canvas: { flex: 1, backgroundColor: BASE_COLORS.parchment, margin: 12, borderRadius: 8, padding: 16 },
-  title: { fontSize: 22, fontWeight: 'bold', color: BASE_COLORS.terracotta },
-  author: { fontSize: 13, color: BASE_COLORS.textMuted, fontStyle: 'italic', marginTop: 2 },
-  divider: { height: 1, backgroundColor: BASE_COLORS.terracotta, marginVertical: 12, opacity: 0.3 },
-  paragraphBlock: { marginBottom: 14, padding: 6, borderRadius: 6 },
-  selectedParagraph: { backgroundColor: BASE_COLORS.highlightYellow },
-  bookmarkedParagraph: { borderLeftWidth: 3, borderLeftColor: BASE_COLORS.terracotta, paddingLeft: 10 },
-  bodyText: { color: BASE_COLORS.textDark },
-  paragraphTools: { flexDirection: 'row', gap: 8, marginTop: 8 },
-  actionBadge: { backgroundColor: BASE_COLORS.terracotta, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-  badgeText: { color: BASE_COLORS.parchment, fontSize: 10, fontWeight: 'bold' },
-  audioBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: BASE_COLORS.obsidianLight, marginHorizontal: 12, marginBottom: 12, padding: 12, borderRadius: 25 },
-  playBtn: { backgroundColor: BASE_COLORS.terracotta, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
-  btnText: { color: BASE_COLORS.parchment, fontWeight: 'bold', fontSize: 11 },
+  container: { flex: 1, padding: 12 },
+  topToolbar: { flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap', gap: 6, marginBottom: 12 },
+  toolBtn: { backgroundColor: BASE_COLORS.obsidianLight, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
+  toolBtnText: { color: BASE_COLORS.parchment, fontSize: 11, fontWeight: 'bold' },
+  readerContent: { flex: 1, paddingHorizontal: 6 },
+  chapterTitle: { color: BASE_COLORS.gold, fontSize: 14, fontWeight: 'bold', letterSpacing: 1.5, marginBottom: 12, textAlign: 'center' },
+  bookText: { fontSize: 16, lineHeight: 28, fontFamily: 'serif' },
+  notesSection: { marginTop: 20, paddingTop: 12, borderTopWidth: 1, borderTopColor: BASE_COLORS.obsidianLight },
+  notesSectionTitle: { color: BASE_COLORS.gold, fontSize: 12, fontWeight: 'bold', marginBottom: 8 },
+  noteCard: { backgroundColor: BASE_COLORS.obsidianLight, padding: 10, borderRadius: 8, marginBottom: 6, borderLeftWidth: 3, borderLeftColor: BASE_COLORS.terracotta },
+  noteTimestamp: { color: BASE_COLORS.gold, fontSize: 10, fontWeight: 'bold' },
+  noteText: { color: BASE_COLORS.parchment, fontSize: 12, marginTop: 2 },
+  inputBar: { flexDirection: 'row', gap: 8, marginVertical: 8 },
+  textInput: { flex: 1, backgroundColor: BASE_COLORS.obsidianLight, color: BASE_COLORS.parchment, padding: 10, borderRadius: 8, fontSize: 12 },
+  micBtn: { backgroundColor: BASE_COLORS.gold, paddingHorizontal: 14, justifyContent: 'center', alignItems: 'center', borderRadius: 8 },
+  micBtnText: { color: BASE_COLORS.obsidian, fontWeight: 'bold', fontSize: 11 },
+  themeSelector: { flexDirection: 'row', justifyContent: 'space-around', backgroundColor: BASE_COLORS.obsidianLight, paddingVertical: 8, borderRadius: 10 },
+  themeDot: { paddingHorizontal: 8, paddingVertical: 4 },
+  themeDotText: { color: BASE_COLORS.parchment, fontSize: 10, fontWeight: 'bold' },
 });
