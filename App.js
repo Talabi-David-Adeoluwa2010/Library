@@ -16,6 +16,7 @@ import QRCode from 'react-native-qrcode-svg';
 // Import Constants & Services
 import { BASE_COLORS } from './src/constants/colors';
 import { chatWithCharacter } from './src/services/aiService';
+import { leaveStudyChannel } from './src/services/agoraService';
 
 // Import Screens
 import ReaderScreen from './src/screens/ReaderScreen';
@@ -98,7 +99,13 @@ export default function App() {
           <Text style={{ color: BASE_COLORS.parchment, fontSize: 12, fontWeight: 'bold' }}>
             {activeCall.type === 'VIDEO' ? '📹' : '📞'} Live Call with {activeCall.targetUser}
           </Text>
-          <TouchableOpacity style={styles.callEndBtn} onPress={() => setActiveCall(null)}>
+          <TouchableOpacity 
+            style={styles.callEndBtn} 
+            onPress={async () => {
+              await leaveStudyChannel();
+              setActiveCall(null);
+            }}
+          >
             <Text style={{ color: BASE_COLORS.parchment, fontSize: 11, fontWeight: 'bold' }}>End</Text>
           </TouchableOpacity>
         </View>
