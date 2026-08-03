@@ -9,11 +9,15 @@ import {
   Modal,
   TextInput,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 
-// Import Constants & Screens
+// Import Constants & Services
 import { BASE_COLORS } from './src/constants/colors';
+import { chatWithCharacter } from './src/services/aiService';
+
+// Import Screens
 import ReaderScreen from './src/screens/ReaderScreen';
 import StudyScreen from './src/screens/StudyScreen';
 import SocialScreen from './src/screens/SocialScreen';
@@ -27,6 +31,7 @@ export default function App() {
   const [showQrModal, setShowQrModal] = useState(false);
   const [showCharacterModal, setShowCharacterModal] = useState(false);
 
+  // User Profile State
   const [user, setUser] = useState({
     username: '@BookWorm_Sam',
     tier: 'Free',
@@ -36,6 +41,33 @@ export default function App() {
     status: '🟢 Online',
     avatar: 'https://picsum.photos/seed/user_sam/200/200',
   });
+
+  // AI Character Chat State
+  const [chatInput, setChatInput] = useState('');
+  const [chatHistory, setChatHistory] = useState([
+    { sender: 'Jay Gatsby', text: 'Old sport, what brings you to my library today?' }
+  ]);
+  const [isAiLoading, setIsAiLoading] = useState(false);
+
+  // Send message to Gemini API for Jay Gatsby
+  const handleSendCharacterMessage = async () => {
+    if (!chatInput.trim() || isAiLoading) return;
+
+    const userMsg = chatInput;
+    setChatInput('');
+
+    // Append user message locally first
+    const updatedHistory = [...chatHistory, { sender: 'You', text: userMsg }];
+    setChatHistory(updatedHistory);
+    setIsAiLoading(true);
+
+    // Call Gemini AI service
+    const aiReply = await chatWithCharacter('Jay Gatsby', userMsg);
+
+    // Update history with AI response
+    setChatHistory([...updatedHistory, { sender: 'Jay Gatsby', text: aiReply }]);
+    setIsAiLoading(false);
+  };
 
   return (
     <SafeAreaView style={[styles.container, nightMode && { backgroundColor: '#121115' }]}>
@@ -111,7 +143,7 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* AI Character Chat Modal */}
+      {/* Dynamic AI Character Chat Modal */}
       <Modal visible={showCharacterModal} animationType="slide" transparent={true}>
         <View style={styles.modalOverlay}>
           <View style={styles.characterModalCard}>
@@ -119,17 +151,34 @@ export default function App() {
             <Text style={{ color: BASE_COLORS.textMuted, fontSize: 12, marginBottom: 12 }}>Talking with Jay Gatsby</Text>
 
             <ScrollView style={styles.characterChatArea}>
-              <View style={styles.chatBubble}>
-                <Text style={styles.chatSender}>Jay Gatsby</Text>
-                <Text style={styles.chatText}>"Old sport, what do you think of the party tonight?"</Text>
-              </View>
+              {chatHistory.map((item, index) => (
+                <View key={index} style={[styles.chatBubble, item.sender === 'You' && styles.userChatBubble]}>
+                  <Text style={styles.chatSender}>{item.sender}</Text>
+                  <Text style={styles.chatText}>{item.text}</Text>
+                </View>
+              ))}
+              {isAiLoading && (
+                <View style={{ paddingVertical: 8, alignItems: 'center' }}>
+                  <ActivityIndicator size="small" color={BASE_COLORS.gold} />
+                  <Text style={{ color: BASE_COLORS.textMuted, fontSize: 10, marginTop: 4 }}>Jay Gatsby is thinking...</Text>
+                </View>
+              )}
             </ScrollView>
 
-            <TextInput
-              style={styles.chatInput}
-              placeholder="Ask Jay Gatsby a question..."
-              placeholderTextColor={BASE_COLORS.textMuted}
-            />
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <TextInput
+                style={[styles.chatInput, { flex: 1 }]}
+                placeholder="Ask Jay Gatsby a question..."
+                placeholderTextColor={BASE_COLORS.textMuted}
+                value={chatInput}
+                onChangeText={setChatInput}
+                onSubmitEditing={handleSendCharacterMessage}
+              />
+              <TouchableOpacity style={styles.sendBtn} onPress={handleSendCharacterMessage}>
+                <Text style={styles.sendBtnText}>Send</Text>
+              </TouchableOpacity>
+            </View>
+
             <TouchableOpacity style={[styles.closeModalBtn, { marginTop: 10 }]} onPress={() => setShowCharacterModal(false)}>
               <Text style={{ color: BASE_COLORS.parchment, fontWeight: 'bold' }}>Exit Chat</Text>
             </TouchableOpacity>
@@ -184,11 +233,14 @@ const styles = StyleSheet.create({
   qrModalCard: { backgroundColor: BASE_COLORS.obsidianLight, padding: 24, borderRadius: 16, alignItems: 'center', width: '80%' },
   qrModalTitle: { color: BASE_COLORS.gold, fontWeight: 'bold', fontSize: 16, letterSpacing: 1 },
   qrCanvas: { backgroundColor: BASE_COLORS.parchment, padding: 16, borderRadius: 12 },
-  closeModalBtn: { backgroundColor: BASE_COLORS.terracotta, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8, marginTop: 12 },
-  characterModalCard: { backgroundColor: BASE_COLORS.obsidianLight, padding: 16, borderRadius: 16, width: '85%', height: 400 },
+  closeModalBtn: { backgroundColor: BASE_COLORS.terracotta, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8, alignItems: 'center' },
+  characterModalCard: { backgroundColor: BASE_COLORS.obsidianLight, padding: 16, borderRadius: 16, width: '85%', height: 420 },
   characterChatArea: { flex: 1, marginVertical: 12 },
   chatBubble: { backgroundColor: BASE_COLORS.obsidian, padding: 12, borderRadius: 10, marginBottom: 8 },
+  userChatBubble: { borderRightWidth: 3, borderRightColor: BASE_COLORS.gold },
   chatSender: { color: BASE_COLORS.gold, fontSize: 11, fontWeight: 'bold' },
   chatText: { color: BASE_COLORS.parchment, fontSize: 13, marginTop: 4 },
   chatInput: { backgroundColor: BASE_COLORS.obsidian, color: BASE_COLORS.parchment, padding: 10, borderRadius: 8 },
+  sendBtn: { backgroundColor: BASE_COLORS.terracotta, paddingHorizontal: 16, justifyContent: 'center', borderRadius: 8 },
+  sendBtnText: { color: BASE_COLORS.parchment, fontWeight: 'bold', fontSize: 12 },
 });
