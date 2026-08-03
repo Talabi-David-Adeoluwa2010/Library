@@ -3,9 +3,10 @@ import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert } from 'react
 import { BASE_COLORS } from '../constants/colors';
 
 const BAZAAR_ITEMS = [
-  { id: '1', title: '🔥 Streak Freeze Ticket', cost: 200, desc: 'Protects your reading streak for one day.' },
-  { id: '2', title: '📜 Typewriter Theme', cost: 400, desc: 'Unlocks classic monochrome reader aesthetics.' },
-  { id: '3', title: '👑 Golden Crown Border', cost: 1000, desc: 'Display a glowing gold border on leaderboards.' },
+  { id: '1', title: '🔥 Streak Freeze Ticket', cost: 200, desc: 'Protects your reading streak for 1 missed day.' },
+  { id: '2', title: '📜 Sepia Classic Reader Theme', cost: 350, desc: 'Unlocks rich warm vintage paper background.' },
+  { id: '3', title: '👑 Scholar Crown Badge', cost: 800, desc: 'Displays a golden crown beside your avatar.' },
+  { id: '4', title: '🧪 Double XP Booster (24h)', cost: 500, desc: 'Earn 2x XP points on all practice quizzes.' },
 ];
 
 export default function BazaarScreen({ user, setUser }) {
@@ -20,8 +21,8 @@ export default function BazaarScreen({ user, setUser }) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>🛍️ XP Bazaar</Text>
-      <Text style={styles.subHeader}>Your Balance: ✨ {user.xp} XP</Text>
+      <Text style={styles.header}>🛍️ XP Scholar Bazaar</Text>
+      <Text style={styles.subHeader}>Your XP Balance: ✨ {user.xp} XP</Text>
 
       <FlatList
         data={BAZAAR_ITEMS}
