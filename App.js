@@ -272,6 +272,11 @@ export default function App({ onLogout }) {
     </SafeAreaView>
   );
 }
+"extra": {
+  "eas": {
+    "projectId": "89df64b3-1221-4720-b3fc-23a61357c7b8"
+  }
+}
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: BASE_COLORS.obsidian },
