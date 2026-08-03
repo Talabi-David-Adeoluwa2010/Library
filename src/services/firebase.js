@@ -1,65 +1,20 @@
-import { initializeApp } from 'firebase/app';
-import { 
-  getAuth, 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword, 
-  signOut 
-} from 'firebase/auth';
-import { 
-  getFirestore, 
-  doc, 
-  setDoc, 
-  getDoc, 
-  updateDoc 
-} from 'firebase/firestore';
+import { initializeApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
+import { getAnalytics } from "firebase/analytics";
 
-// Replace these values with your Firebase Console Project Settings
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyAL3o-7LXffBESIYHMio6RGPkEy1k7DUK8",
+  authDomain: "parchmentobsidian-b27c8.firebaseapp.com",
+  projectId: "parchmentobsidian-b27c8",
+  storageBucket: "parchmentobsidian-b27c8.firebasestorage.app",
+  messagingSenderId: "936507159882",
+  appId: "1:936507159882:web:a537faf9e532ff28c33db3",
+  measurementId: "G-69HV8SS2F0"
 };
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
-
-// 1. Register New User & Create Cloud Profile
-export const registerUser = async (email, password, username) => {
-  const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-  const user = userCredential.user;
-
-  const userProfile = {
-    uid: user.uid,
-    username: username || `@${email.split('@')[0]}`,
-    email: email,
-    xp: 100,
-    streak: 1,
-    rank: 'Novice Scholar',
-    tier: 'Free',
-    avatar: 'https://picsum.photos/seed/user_sam/200/200',
-    createdAt: new Date().toISOString()
-  };
-
-  await setDoc(doc(db, "users", user.uid), userProfile);
-  return userProfile;
-};
-
-// 2. User Sign In
-export const loginUser = async (email, password) => {
-  const userCredential = await signInWithEmailAndPassword(auth, email, password);
-  const userDoc = await getDoc(doc(db, "users", userCredential.user.uid));
-  return userDoc.data();
-};
-
-// 3. Sync User XP & Streaks to Cloud Database
-export const syncUserXP = async (uid, newXp) => {
-  const userRef = doc(db, "users", uid);
-  await updateDoc(userRef, { xp: newXp });
-};
-
-// 4. Sign Out
-export const logoutUser = () => signOut(auth);
+export const analytics = getAnalytics(app);
+export default app;
