@@ -25,9 +25,9 @@ export default function ProfileScreen({ user, openQr }) {
         </View>
       </View>
 
-      {/* Actions */}
+      {/* Passport Modal Trigger */}
       <TouchableOpacity style={styles.passportBtn} onPress={openQr}>
-        <Text style={styles.passportBtnText}>📷 Open Library Passport (QR)</Text>
+        <Text style={styles.passportBtnText}>📷 Open Digital Library Passport (QR)</Text>
       </TouchableOpacity>
     </View>
   );
