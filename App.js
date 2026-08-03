@@ -10,6 +10,7 @@ import {
   TextInput,
   ScrollView,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 
@@ -30,7 +31,7 @@ import FlashcardScreen from './src/screens/FlashcardScreen';
 import AnalyticsScreen from './src/screens/AnalyticsScreen';
 import LoungeScreen from './src/screens/LoungeScreen';
 
-export default function App() {
+export default function App({ onLogout }) {
   const [activeTab, setActiveTab] = useState('Reader');
   const [nightMode, setNightMode] = useState(false);
   const [activeCall, setActiveCall] = useState(null);
@@ -72,7 +73,24 @@ export default function App() {
   };
 
   const handleAddFriend = (friendHandle) => {
-    alert(`Successfully added ${friendHandle} to your Scholar network!`);
+    Alert.alert('Friend Added!', `Successfully added ${friendHandle} to your Scholar network.`);
+  };
+
+  const handleLogoutPress = () => {
+    Alert.alert(
+      'Log Out',
+      'Are you sure you want to log out of your session?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Log Out',
+          style: 'destructive',
+          onPress: () => {
+            if (onLogout) onLogout();
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -94,6 +112,9 @@ export default function App() {
           </TouchableOpacity>
           <TouchableOpacity style={styles.headerBtn} onPress={() => setShowQrModal(true)}>
             <Text style={{ fontSize: 11, color: BASE_COLORS.parchment }}>🪪 Passport</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.logoutHeaderBtn} onPress={handleLogoutPress}>
+            <Text style={{ fontSize: 11, color: BASE_COLORS.parchment, fontWeight: 'bold' }}>🚪 Exit</Text>
           </TouchableOpacity>
           <View style={styles.statsBadge}>
             <Text style={styles.statsText}>🔥 {user.streak}d | ✨ {user.xp} XP</Text>
@@ -136,7 +157,13 @@ export default function App() {
         {activeTab === 'Lounge' && <LoungeScreen />}
         {activeTab === 'Social' && <SocialScreen user={user} setUser={setUser} setActiveCall={setActiveCall} />}
         {activeTab === 'Bazaar' && <BazaarScreen user={user} setUser={setUser} />}
-        {activeTab === 'Profile' && <ProfileScreen user={user} openQr={() => setShowQrModal(true)} />}
+        {activeTab === 'Profile' && (
+          <ProfileScreen
+            user={user}
+            openQr={() => setShowQrModal(true)}
+            onLogout={handleLogoutPress}
+          />
+        )}
       </View>
 
       {/* Snapcode Camera Scanner Modal */}
@@ -153,7 +180,7 @@ export default function App() {
           <View style={styles.qrModalCard}>
             <Text style={styles.qrModalTitle}>LIBRARY PASSPORT</Text>
             <Text style={{ color: BASE_COLORS.textMuted, fontSize: 12, marginBottom: 16 }}>{user.username}</Text>
-            
+
             <View style={styles.qrCanvas}>
               <QRCode
                 value={`https://parchment.app/u/${user.username}`}
@@ -252,6 +279,7 @@ const styles = StyleSheet.create({
   logoText: { color: BASE_COLORS.parchment, fontWeight: 'bold', fontSize: 12 },
   userTag: { color: BASE_COLORS.textMuted, fontSize: 10, marginTop: 2 },
   headerBtn: { backgroundColor: BASE_COLORS.obsidianLight, paddingHorizontal: 7, paddingVertical: 4, borderRadius: 6 },
+  logoutHeaderBtn: { backgroundColor: BASE_COLORS.terracotta, paddingHorizontal: 7, paddingVertical: 4, borderRadius: 6 },
   statsBadge: { backgroundColor: BASE_COLORS.obsidianLight, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 10 },
   statsText: { color: BASE_COLORS.parchment, fontSize: 11, fontWeight: 'bold' },
   body: { flex: 1 },
