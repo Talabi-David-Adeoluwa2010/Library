@@ -3,31 +3,29 @@
   "version": "1.0.0",
   "main": "node_modules/expo/AppEntry.js",
   "scripts": {
-  "start": "expo start",
-  "build": "expo export --platform web",
-  "android": "expo start --android",
-  "ios": "expo start --ios",
-  "web": "expo start --web"
-}
-,
+    "start": "expo start",
+    "build": "expo export --platform web",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web"
+  },
   "dependencies": {
-  "@google/genai": "^1.0.0",
-  "@react-native-async-storage/async-storage": "...",
-  "expo": "~51.0.0",
-  "expo-camera": "~15.0.14",
-  "expo-speech": "~12.0.2",
-  "expo-status-bar": "~1.12.1",
-  "firebase": "^10.12.0",
-  "react": "18.2.0",
-  "react-dom": "18.2.0",
-  "react-native": "0.74.5",
-  "react-native-agora": "^4.3.2",
-  "react-native-qrcode-svg": "^6.3.1",
-  "react-native-svg": "15.2.0",
-  "react-native-web": "~0.19.10",
-  "@expo/metro-runtime": "~3.2.1"
-}
-,
+    "@google/genai": "^1.0.0",
+    "@react-native-async-storage/async-storage": "1.23.1",
+    "expo": "~51.0.0",
+    "expo-camera": "~15.0.14",
+    "expo-speech": "~12.0.2",
+    "expo-status-bar": "~1.12.1",
+    "firebase": "^10.12.0",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "react-native": "0.74.5",
+    "react-native-agora": "^4.3.2",
+    "react-native-qrcode-svg": "^6.3.1",
+    "react-native-svg": "15.2.0",
+    "react-native-web": "~0.19.10",
+    "@expo/metro-runtime": "~3.2.1"
+  },
   "devDependencies": {
     "@babel/core": "^7.20.0"
   },
