@@ -1,6 +1,6 @@
 import { createAgoraRtcEngine, ChannelProfileType, ClientRoleType } from 'react-native-agora';
 
-const AGORA_APP_ID = "YOUR_AGORA_APP_ID"; // Replace with your Agora App ID
+const AGORA_APP_ID = process.env.EXPO_PUBLIC_AGORA_APP_ID;
 
 let agoraEngine = null;
 
