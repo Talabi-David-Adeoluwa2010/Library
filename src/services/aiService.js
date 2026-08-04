@@ -1,7 +1,7 @@
 import { GoogleGenAI } from '@google/genai';
 
-// Initialize with your API key from the .env file (Vite format)
-const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
+// Initialize using Expo's public environment variable format
+const ai = new GoogleGenAI({ apiKey: process.env.EXPO_PUBLIC_GEMINI_API_KEY });
 
 /**
  * Chat in-character with a literary figure
