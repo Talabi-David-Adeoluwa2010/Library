@@ -14,17 +14,48 @@ import { checkProAccess } from '../services/proGateService';
 
 export default function ReaderScreen({ user, nightMode, setNightMode, selectedBook, openCharacterChat }) {
   const [activeTheme, setActiveTheme] = useState('parchment');
+  const [currentChapter, setCurrentChapter] = useState(1);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isDownloaded, setIsDownloaded] = useState(false);
   const [voiceNotes, setVoiceNotes] = useState([]);
   const [isRecording, setIsRecording] = useState(false);
   const [noteText, setNoteText] = useState('');
 
-  // Pull dynamic title and author from selection, or fallback to a default
+  // Pull dynamic title and author from selection, or fallback to default
   const bookTitle = selectedBook?.title || 'The Great Gatsby';
   const bookAuthor = selectedBook?.author || 'F. Scott Fitzgerald';
 
-  const samplePassage = `Opening records and archival chapters for "${bookTitle}" by ${bookAuthor}.\n\nIn my younger and more vulnerable years my father gave me some advice that I’ve been turning over in my mind ever since. 'Whenever you feel like criticizing any one,' he told me, 'just remember that all the people in this world haven’t had the advantages that you’ve had.'`;
+  // Sample chapters content map
+  const chapterPassages = {
+    1: `In my younger and more vulnerable years my father gave me some advice that I’ve been turning over in my mind ever since. 'Whenever you feel like criticizing any one,' he told me, 'just remember that all the people in this world haven’t had the advantages that you’ve had.'\n\nHe didn't say any more, but we've always been unusually communicative in a reserved way, and I understood that he meant a great deal more than that.`,
+    2: `About half way between West Egg and New York the motor road hastily joins the railroad and runs alongside it for a quarter of a mile, so as to shrink away from a certain desolate area of land. This is a valley of ashes—a fantastic farm where ashes grow like wheat into ridges and hills and grotesque gardens.`,
+    3: `There was music from my neighbor's house through the summer nights. In his blue gardens men and girls came and went like moths among the whisperings and the champagne and the stars. At high tide in the afternoon I watched his guests diving from the tower of his raft.`,
+  };
+
+  // Get content for current chapter or fallback generated text for higher chapters
+  const getCurrentPassage = () => {
+    if (chapterPassages[currentChapter]) {
+      return chapterPassages[currentChapter];
+    }
+    return `[Archival Record] You are reading Chapter ${currentChapter} of "${bookTitle}" by ${bookAuthor}.\n\nContinued excerpt synchronized from the public catalog archive. As you progress through this text, your study stats and reading XP increase automatically.`;
+  };
+
+  const currentPassage = getCurrentPassage();
+
+  // Navigation handlers
+  const handleNextChapter = () => {
+    if (isSpeaking) Speech.stop();
+    setIsSpeaking(false);
+    setCurrentChapter((prev) => prev + 1);
+  };
+
+  const handlePrevChapter = () => {
+    if (currentChapter > 1) {
+      if (isSpeaking) Speech.stop();
+      setIsSpeaking(false);
+      setCurrentChapter((prev) => prev - 1);
+    }
+  };
 
   // Text-To-Speech Controls
   const toggleSpeech = () => {
@@ -33,7 +64,7 @@ export default function ReaderScreen({ user, nightMode, setNightMode, selectedBo
       setIsSpeaking(false);
     } else {
       setIsSpeaking(true);
-      Speech.speak(samplePassage, {
+      Speech.speak(currentPassage, {
         language: 'en-US',
         pitch: 1.0,
         rate: 0.9,
@@ -43,7 +74,7 @@ export default function ReaderScreen({ user, nightMode, setNightMode, selectedBo
     }
   };
 
-  // Offline Download Check (Library Pro Feature)
+  // Offline Download Check
   const handleOfflineDownload = () => {
     checkProAccess(user, 'Offline Sync & Book Downloading', () => {
       setIsDownloaded(!isDownloaded);
@@ -56,7 +87,7 @@ export default function ReaderScreen({ user, nightMode, setNightMode, selectedBo
     });
   };
 
-  // Theme Picker Gate (Library Pro Feature for Emerald & Velvet)
+  // Theme Picker Gate
   const handleSelectTheme = (themeKey) => {
     if (themeKey === 'emerald' || themeKey === 'velvet') {
       checkProAccess(user, 'Custom Warmth & Velvet Themes', () => setActiveTheme(themeKey));
@@ -75,11 +106,11 @@ export default function ReaderScreen({ user, nightMode, setNightMode, selectedBo
       }
       setVoiceNotes([
         ...voiceNotes,
-        { id: Date.now().toString(), text: noteText, timestamp: 'Just now' },
+        { id: Date.now().toString(), text: noteText, timestamp: `Chapter ${currentChapter}` },
       ]);
       setNoteText('');
       setIsRecording(false);
-      Alert.alert('Margin Note Saved! 🎙️', 'Transcribed and linked to this page.');
+      Alert.alert('Margin Note Saved! 🎙️', 'Transcribed and linked to this chapter.');
     } else {
       setIsRecording(true);
     }
@@ -130,8 +161,26 @@ export default function ReaderScreen({ user, nightMode, setNightMode, selectedBo
       <ScrollView style={styles.readerContent}>
         <Text style={styles.bookMainTitle}>{bookTitle}</Text>
         <Text style={styles.bookSubAuthor}>By {bookAuthor}</Text>
-        <Text style={styles.chapterTitle}>CHAPTER I</Text>
-        <Text style={[styles.bookText, { color: getTextColor() }]}>{samplePassage}</Text>
+        
+        <Text style={styles.chapterTitle}>CHAPTER {currentChapter}</Text>
+        <Text style={[styles.bookText, { color: getTextColor() }]}>{currentPassage}</Text>
+
+        {/* Chapter Navigation Controls */}
+        <View style={styles.chapterNavRow}>
+          <TouchableOpacity
+            style={[styles.navBtn, currentChapter === 1 && styles.disabledNavBtn]}
+            onPress={handlePrevChapter}
+            disabled={currentChapter === 1}
+          >
+            <Text style={styles.navBtnText}>⬅️ Prev Chapter</Text>
+          </TouchableOpacity>
+
+          <Text style={styles.chapterIndicator}>Ch. {currentChapter}</Text>
+
+          <TouchableOpacity style={styles.navBtn} onPress={handleNextChapter}>
+            <Text style={styles.navBtnText}>Next Chapter ➡️</Text>
+          </TouchableOpacity>
+        </View>
 
         {/* Display Margin Notes */}
         {voiceNotes.length > 0 && (
@@ -190,7 +239,12 @@ const styles = StyleSheet.create({
   bookSubAuthor: { color: BASE_COLORS.textMuted, fontSize: 12, textAlign: 'center', marginBottom: 14 },
   chapterTitle: { color: BASE_COLORS.gold, fontSize: 13, fontWeight: 'bold', letterSpacing: 1.5, marginBottom: 12, textAlign: 'center' },
   bookText: { fontSize: 15, lineHeight: 26, fontFamily: 'serif' },
-  notesSection: { marginTop: 20, paddingTop: 12, borderTopWidth: 1, borderTopColor: BASE_COLORS.obsidianLight },
+  chapterNavRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: 20, paddingTop: 14, borderTopWidth: 1, borderTopColor: BASE_COLORS.obsidianLight },
+  navBtn: { backgroundColor: BASE_COLORS.terracotta, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8 },
+  disabledNavBtn: { opacity: 0.4 },
+  navBtnText: { color: BASE_COLORS.parchment, fontSize: 11, fontWeight: 'bold' },
+  chapterIndicator: { color: BASE_COLORS.gold, fontSize: 12, fontWeight: 'bold' },
+  notesSection: { marginTop: 10, paddingTop: 12, borderTopWidth: 1, borderTopColor: BASE_COLORS.obsidianLight },
   notesSectionTitle: { color: BASE_COLORS.gold, fontSize: 12, fontWeight: 'bold', marginBottom: 8 },
   noteCard: { backgroundColor: BASE_COLORS.obsidianLight, padding: 10, borderRadius: 8, marginBottom: 6, borderLeftWidth: 3, borderLeftColor: BASE_COLORS.terracotta },
   noteTimestamp: { color: BASE_COLORS.gold, fontSize: 10, fontWeight: 'bold' },
