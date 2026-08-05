@@ -11,13 +11,24 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
+  Platform,
 } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 
 // Import Constants & Services
 import { BASE_COLORS } from './src/constants/colors';
 import { chatWithCharacter } from './src/services/aiService';
-import { leaveStudyChannel } from './src/services/agoraService';
+
+// Conditionally handle native-only Agora services to prevent web bundling crashes
+let leaveStudyChannel = async () => {};
+if (Platform.OS !== 'web') {
+  try {
+    const agoraService = require('./src/services/agoraService');
+    leaveStudyChannel = agoraService.leaveStudyChannel;
+  } catch (e) {
+    // Fallback if native module is unavailable
+  }
+}
 
 // Import Screens
 import ReaderScreen from './src/screens/ReaderScreen';
