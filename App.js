@@ -26,8 +26,9 @@ if (Platform.OS !== 'web') {
   } catch (e) {}
 }
 
+import LoadingScreen from './src/screens/LoadingScreen'; // Added Loading Screen Import
 import AuthScreen from './src/screens/AuthScreen';
-import ExploreScreen from './src/screens/ExploreScreen'; // Global Book Search
+import ExploreScreen from './src/screens/ExploreScreen';
 import ReaderScreen from './src/screens/ReaderScreen';
 import StudyScreen from './src/screens/StudyScreen';
 import SocialScreen from './src/screens/SocialScreen';
@@ -40,8 +41,9 @@ import AnalyticsScreen from './src/screens/AnalyticsScreen';
 import LoungeScreen from './src/screens/LoungeScreen';
 
 export default function App() {
+  const [isLoading, setIsLoading] = useState(true); // Added loading state
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [activeTab, setActiveTab] = useState('Explore'); // Starts in global catalog search
+  const [activeTab, setActiveTab] = useState('Explore');
   const [nightMode, setNightMode] = useState(false);
   const [activeCall, setActiveCall] = useState(null);
   const [showQrModal, setShowQrModal] = useState(false);
@@ -87,10 +89,17 @@ export default function App() {
     setIsAuthenticated(false);
   };
 
+  // 1. Show the Loading Screen first
+  if (isLoading) {
+    return <LoadingScreen onFinishLoading={() => setIsLoading(false)} />;
+  }
+
+  // 2. Show the Auth Screen if not logged in
   if (!isAuthenticated) {
     return <AuthScreen onLoginSuccess={() => setIsAuthenticated(true)} />;
   }
 
+  // 3. Show the Main App
   return (
     <SafeAreaView style={[styles.container, nightMode && { backgroundColor: '#121115' }]}>
       <StatusBar barStyle="light-content" backgroundColor={BASE_COLORS.obsidian} />
