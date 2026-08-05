@@ -15,22 +15,19 @@ import {
 } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 
-// Import Constants & Services
 import { BASE_COLORS } from './src/constants/colors';
 import { chatWithCharacter } from './src/services/aiService';
 
-// Conditionally handle native-only Agora services to prevent web bundling crashes
 let leaveStudyChannel = async () => {};
 if (Platform.OS !== 'web') {
   try {
     const agoraService = require('./src/services/agoraService');
     leaveStudyChannel = agoraService.leaveStudyChannel;
-  } catch (e) {
-    // Fallback if native module is unavailable
-  }
+  } catch (e) {}
 }
 
-// Import Screens
+import AuthScreen from './src/screens/AuthScreen';
+import ExploreScreen from './src/screens/ExploreScreen'; // Global Book Search
 import ReaderScreen from './src/screens/ReaderScreen';
 import StudyScreen from './src/screens/StudyScreen';
 import SocialScreen from './src/screens/SocialScreen';
@@ -42,33 +39,32 @@ import FlashcardScreen from './src/screens/FlashcardScreen';
 import AnalyticsScreen from './src/screens/AnalyticsScreen';
 import LoungeScreen from './src/screens/LoungeScreen';
 
-export default function App({ onLogout }) {
-  const [activeTab, setActiveTab] = useState('Reader');
+export default function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [activeTab, setActiveTab] = useState('Explore'); // Starts in global catalog search
   const [nightMode, setNightMode] = useState(false);
   const [activeCall, setActiveCall] = useState(null);
   const [showQrModal, setShowQrModal] = useState(false);
   const [showScannerModal, setShowScannerModal] = useState(false);
   const [showCharacterModal, setShowCharacterModal] = useState(false);
+  const [selectedBook, setSelectedBook] = useState(null);
 
-  // User Profile State
   const [user, setUser] = useState({
     username: '@BookWorm_Sam',
-    tier: 'Free Tier',
+    tier: 'Scholar Tier',
     xp: 650,
     streak: 6,
-    rank: 'Scholar',
+    rank: 'Bibliophile',
     status: '🟢 Online',
     avatar: 'https://picsum.photos/seed/user_sam/200/200',
   });
 
-  // AI Companion Chat State
   const [chatInput, setChatInput] = useState('');
   const [chatHistory, setChatHistory] = useState([
-    { sender: 'Jay Gatsby', text: 'Old sport, what brings you to my library today?' },
+    { sender: 'Jay Gatsby', text: 'Welcome to the grand archives, old sport. What knowledge do you seek?' },
   ]);
   const [isAiLoading, setIsAiLoading] = useState(false);
 
-  // Send message to Gemini API for Jay Gatsby
   const handleSendCharacterMessage = async () => {
     if (!chatInput.trim() || isAiLoading) return;
     const userMsg = chatInput;
@@ -84,25 +80,16 @@ export default function App({ onLogout }) {
   };
 
   const handleAddFriend = (friendHandle) => {
-    Alert.alert('Friend Added!', `Successfully added ${friendHandle} to your Scholar network.`);
+    Alert.alert('Friend Added!', `Successfully added ${friendHandle} to your network.`);
   };
 
-  const handleLogoutPress = () => {
-    Alert.alert(
-      'Log Out',
-      'Are you sure you want to log out of your session?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Log Out',
-          style: 'destructive',
-          onPress: () => {
-            if (onLogout) onLogout();
-          },
-        },
-      ]
-    );
+  const handleLogout = () => {
+    setIsAuthenticated(false);
   };
+
+  if (!isAuthenticated) {
+    return <AuthScreen onLoginSuccess={() => setIsAuthenticated(true)} />;
+  }
 
   return (
     <SafeAreaView style={[styles.container, nightMode && { backgroundColor: '#121115' }]}>
@@ -124,7 +111,7 @@ export default function App({ onLogout }) {
           <TouchableOpacity style={styles.headerBtn} onPress={() => setShowQrModal(true)}>
             <Text style={{ fontSize: 11, color: BASE_COLORS.parchment }}>🪪 Passport</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.logoutHeaderBtn} onPress={handleLogoutPress}>
+          <TouchableOpacity style={styles.logoutHeaderBtn} onPress={handleLogout}>
             <Text style={{ fontSize: 11, color: BASE_COLORS.parchment, fontWeight: 'bold' }}>🚪 Exit</Text>
           </TouchableOpacity>
           <View style={styles.statsBadge}>
@@ -151,13 +138,22 @@ export default function App({ onLogout }) {
         </View>
       )}
 
-      {/* Main Screen Body Router */}
+      {/* Main Content Router */}
       <View style={styles.body}>
+        {activeTab === 'Explore' && (
+          <ExploreScreen
+            onSelectBook={(book) => {
+              setSelectedBook(book);
+              setActiveTab('Reader');
+            }}
+          />
+        )}
         {activeTab === 'Reader' && (
           <ReaderScreen
             user={user}
             nightMode={nightMode}
             setNightMode={setNightMode}
+            selectedBook={selectedBook}
             openCharacterChat={() => setShowCharacterModal(true)}
           />
         )}
@@ -172,26 +168,21 @@ export default function App({ onLogout }) {
           <ProfileScreen
             user={user}
             openQr={() => setShowQrModal(true)}
-            onLogout={handleLogoutPress}
+            onLogout={handleLogout}
           />
         )}
       </View>
 
-      {/* Snapcode Camera Scanner Modal */}
+      {/* Modals (Scanner, Passport, AI Companion) */}
       <Modal visible={showScannerModal} animationType="slide">
-        <ScannerScreen
-          onClose={() => setShowScannerModal(false)}
-          onAddFriend={handleAddFriend}
-        />
+        <ScannerScreen onClose={() => setShowScannerModal(false)} onAddFriend={handleAddFriend} />
       </Modal>
 
-      {/* Library Passport / QR Modal */}
       <Modal visible={showQrModal} animationType="slide" transparent={true}>
         <View style={styles.modalOverlay}>
           <View style={styles.qrModalCard}>
             <Text style={styles.qrModalTitle}>LIBRARY PASSPORT</Text>
             <Text style={{ color: BASE_COLORS.textMuted, fontSize: 12, marginBottom: 16 }}>{user.username}</Text>
-
             <View style={styles.qrCanvas}>
               <QRCode
                 value={`https://parchment.app/u/${user.username}`}
@@ -200,10 +191,6 @@ export default function App({ onLogout }) {
                 backgroundColor={BASE_COLORS.parchment}
               />
             </View>
-
-            <Text style={{ color: BASE_COLORS.parchment, marginTop: 16, fontWeight: 'bold' }}>
-              Status: <Text style={{ color: BASE_COLORS.gold }}>{user.tier}</Text>
-            </Text>
             <TouchableOpacity style={styles.closeModalBtn} onPress={() => setShowQrModal(false)}>
               <Text style={{ color: BASE_COLORS.parchment, fontWeight: 'bold' }}>Close Passport</Text>
             </TouchableOpacity>
@@ -211,13 +198,11 @@ export default function App({ onLogout }) {
         </View>
       </Modal>
 
-      {/* AI Character Chat Modal */}
       <Modal visible={showCharacterModal} animationType="slide" transparent={true}>
         <View style={styles.modalOverlay}>
           <View style={styles.characterModalCard}>
             <Text style={styles.qrModalTitle}>🎭 AI Character Companion</Text>
             <Text style={{ color: BASE_COLORS.textMuted, fontSize: 12, marginBottom: 10 }}>Talking with Jay Gatsby</Text>
-
             <ScrollView style={styles.characterChatArea}>
               {chatHistory.map((item, index) => (
                 <View key={index} style={[styles.chatBubble, item.sender === 'You' && styles.userChatBubble]}>
@@ -232,7 +217,6 @@ export default function App({ onLogout }) {
                 </View>
               )}
             </ScrollView>
-
             <View style={{ flexDirection: 'row', gap: 8 }}>
               <TextInput
                 style={[styles.chatInput, { flex: 1 }]}
@@ -246,7 +230,6 @@ export default function App({ onLogout }) {
                 <Text style={styles.sendBtnText}>Send</Text>
               </TouchableOpacity>
             </View>
-
             <TouchableOpacity style={[styles.closeModalBtn, { marginTop: 10 }]} onPress={() => setShowCharacterModal(false)}>
               <Text style={{ color: BASE_COLORS.parchment, fontWeight: 'bold' }}>Exit Chat</Text>
             </TouchableOpacity>
@@ -257,6 +240,7 @@ export default function App({ onLogout }) {
       {/* Bottom Navigation Bar */}
       <View style={styles.tabBar}>
         {[
+          { key: 'Explore', icon: '🔍', label: 'Explore' },
           { key: 'Reader', icon: '📖', label: 'Reader' },
           { key: 'Study', icon: '🧪', label: 'Study' },
           { key: 'Analytics', icon: '📊', label: 'Stats' },
@@ -278,8 +262,6 @@ export default function App({ onLogout }) {
           </TouchableOpacity>
         ))}
       </View>
-
-      {nightMode && <View style={styles.eyeCareOverlay} pointerEvents="none" />}
     </SafeAreaView>
   );
 }
@@ -299,14 +281,13 @@ const styles = StyleSheet.create({
   activeTabItem: { borderBottomWidth: 2, borderBottomColor: BASE_COLORS.terracotta },
   tabText: { color: BASE_COLORS.textMuted, fontSize: 7, fontWeight: '600' },
   activeTabText: { color: BASE_COLORS.terracotta },
-  eyeCareOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: BASE_COLORS.tintOverlay },
   floatingCallBar: { backgroundColor: BASE_COLORS.terracotta, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 8 },
   callEndBtn: { backgroundColor: BASE_COLORS.obsidian, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', alignItems: 'center' },
   qrModalCard: { backgroundColor: BASE_COLORS.obsidianLight, padding: 24, borderRadius: 16, alignItems: 'center', width: '80%' },
   qrModalTitle: { color: BASE_COLORS.gold, fontWeight: 'bold', fontSize: 16, letterSpacing: 1 },
   qrCanvas: { backgroundColor: BASE_COLORS.parchment, padding: 16, borderRadius: 12 },
-  closeModalBtn: { backgroundColor: BASE_COLORS.terracotta, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8, alignItems: 'center' },
+  closeModalBtn: { backgroundColor: BASE_COLORS.terracotta, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8, alignItems: 'center', marginTop: 16 },
   characterModalCard: { backgroundColor: BASE_COLORS.obsidianLight, padding: 16, borderRadius: 16, width: '85%', height: 420 },
   characterChatArea: { flex: 1, marginVertical: 12 },
   chatBubble: { backgroundColor: BASE_COLORS.obsidian, padding: 12, borderRadius: 10, marginBottom: 8 },
