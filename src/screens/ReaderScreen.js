@@ -12,7 +12,7 @@ import * as Speech from 'expo-speech';
 import { BASE_COLORS } from '../constants/colors';
 import { checkProAccess } from '../services/proGateService';
 
-export default function ReaderScreen({ user, nightMode, setNightMode, openCharacterChat }) {
+export default function ReaderScreen({ user, nightMode, setNightMode, selectedBook, openCharacterChat }) {
   const [activeTheme, setActiveTheme] = useState('parchment');
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isDownloaded, setIsDownloaded] = useState(false);
@@ -20,8 +20,11 @@ export default function ReaderScreen({ user, nightMode, setNightMode, openCharac
   const [isRecording, setIsRecording] = useState(false);
   const [noteText, setNoteText] = useState('');
 
-  const samplePassage =
-    "In my younger and more vulnerable years my father gave me some advice that I’ve been turning over in my mind ever since. 'Whenever you feel like criticizing any one,' he told me, 'just remember that all the people in this world haven’t had the advantages that you’ve had.'";
+  // Pull dynamic title and author from selection, or fallback to a default
+  const bookTitle = selectedBook?.title || 'The Great Gatsby';
+  const bookAuthor = selectedBook?.author || 'F. Scott Fitzgerald';
+
+  const samplePassage = `Opening records and archival chapters for "${bookTitle}" by ${bookAuthor}.\n\nIn my younger and more vulnerable years my father gave me some advice that I’ve been turning over in my mind ever since. 'Whenever you feel like criticizing any one,' he told me, 'just remember that all the people in this world haven’t had the advantages that you’ve had.'`;
 
   // Text-To-Speech Controls
   const toggleSpeech = () => {
@@ -125,6 +128,8 @@ export default function ReaderScreen({ user, nightMode, setNightMode, openCharac
 
       {/* Book Reader Canvas */}
       <ScrollView style={styles.readerContent}>
+        <Text style={styles.bookMainTitle}>{bookTitle}</Text>
+        <Text style={styles.bookSubAuthor}>By {bookAuthor}</Text>
         <Text style={styles.chapterTitle}>CHAPTER I</Text>
         <Text style={[styles.bookText, { color: getTextColor() }]}>{samplePassage}</Text>
 
@@ -181,8 +186,10 @@ const styles = StyleSheet.create({
   toolBtn: { backgroundColor: BASE_COLORS.obsidianLight, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
   toolBtnText: { color: BASE_COLORS.parchment, fontSize: 11, fontWeight: 'bold' },
   readerContent: { flex: 1, paddingHorizontal: 6 },
-  chapterTitle: { color: BASE_COLORS.gold, fontSize: 14, fontWeight: 'bold', letterSpacing: 1.5, marginBottom: 12, textAlign: 'center' },
-  bookText: { fontSize: 16, lineHeight: 28, fontFamily: 'serif' },
+  bookMainTitle: { color: BASE_COLORS.gold, fontSize: 16, fontWeight: 'bold', textAlign: 'center', marginBottom: 2 },
+  bookSubAuthor: { color: BASE_COLORS.textMuted, fontSize: 12, textAlign: 'center', marginBottom: 14 },
+  chapterTitle: { color: BASE_COLORS.gold, fontSize: 13, fontWeight: 'bold', letterSpacing: 1.5, marginBottom: 12, textAlign: 'center' },
+  bookText: { fontSize: 15, lineHeight: 26, fontFamily: 'serif' },
   notesSection: { marginTop: 20, paddingTop: 12, borderTopWidth: 1, borderTopColor: BASE_COLORS.obsidianLight },
   notesSectionTitle: { color: BASE_COLORS.gold, fontSize: 12, fontWeight: 'bold', marginBottom: 8 },
   noteCard: { backgroundColor: BASE_COLORS.obsidianLight, padding: 10, borderRadius: 8, marginBottom: 6, borderLeftWidth: 3, borderLeftColor: BASE_COLORS.terracotta },
